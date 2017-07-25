@@ -2,6 +2,17 @@
 
 **Behavioral Cloning Project**
 
+[image1]: ./examples/Sample_far_left.png "Sample far left"
+[image2]: ./examples/Sample_near_left.png "Sample near left"
+[image3]: ./examples/Sample_center.png "Sample center"
+[image4]: ./examples/Sample_near_right.png "Sample near right"
+[image5]: ./examples/Sample_far_right.png "Sample far right"
+[image6]: ./examples/Bridge_approach.jpg "Approaching bridge"
+[image7]: ./examples/On_bridge.jpg "On bridge"
+[image8]: ./examples/Gray_approach.png "Approaching bridge"
+[image9]: ./examples/Gray_bridge.png "On bridge"
+[image10]: ./examples/Right_recovery.jpg "Recovery on right"
+
 ## Rubric Points
 Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
 
@@ -63,6 +74,11 @@ Model Architecture and Training Strategy
 1. Solution Design Approach
 
 The model was built iteratively from a basic single convolution and single fully connected layer. I chose 5 architypical images from the full dataset. One image was chose for each of the values -0.5, -0.25, 0, 0.25 and 0.5. I then trained and validated with only these 5 images until my model had completely memorized these samples.  
+![0.5][image1]
+![0.25][image2]
+![0.0][image3]
+![-0.25][image4]
+![-0.5][image5]
 
 It was in this quick validation environment that I added and tuned layers. I discarded AveragePooling and MaxPooling as well as Dropout as detrimental during this testing. By adjusting layer parameters, I was able to bring my loss on this tiny dataset down to approximately 1.5 * 10^-11. As close to effectively zero as I cared to pursue.  
 
@@ -79,6 +95,21 @@ With the final configuration of batch size 128 and 40 epochs, the model stays on
 
 My model consists of 3 convolutions followed by 3 fully connected layers with LeakyRelu activations separating the layers (lines 271 - 283). I chose to use glorot normal initialization as it provided the quickest convergence in my testing.  
 
+Input (64x64x1 Grayscale images)  
+Convolution (3x3x12, stride 2x2)  
+LeakyRelu (Alpha 0.3)  
+Convolution (3x3x16, stride 2x2)  
+LeakyRelu (Alpha 0.3)  
+Convolution (3x3x24, stride 2x2)  
+LeakyRelu (Alpha 0.3)  
+Flatten (7x7x24 to 1,176 nodes)  
+Fully Connected (1,176 to 1,000)  
+LeakyRelu (Alpha 0.3)  
+Fully Connected (1,000 to 100)  
+LeakyRelu (Alpha 0.3)  
+Output (100 to 1)  
+
+
 Each convolution consists of a 3x3 filter on a 2x2 stride. The convolutional filters are set with steadily increasing depth. I started with a filter depth of 12, followed by 16 and finally 24.  
 
 The fully connected layers step down 3 times, from 1176 to 1000, from 1000 to 100 and from 100 to 1 for the final steering output.  
@@ -88,6 +119,20 @@ The fully connected layers step down 3 times, from 1176 to 1000, from 1000 to 10
 
 As discussed above, I used several methods to gather simulated data. This data was then compiled into a single dataset, irrespective of source. In an effort to maximize the value of the gathered data, for every timestep of the raw datasets, I included the center camera with the recorded steering value, then flipped the center camera over the vertical axis and included that with the opposite steering value.  I used a 0.2 steering offset for the left image and -0.2 for the right. These were also flipped. This resulted in about 58,000 images.  
 
+The unique challenges of the bridge required special attention. To resolve this, I started each lap just before the bridge and ended the lap after the bridge. This doubled the bridge content and assisted in handling of this area.
+![Approaching the bridge][image6]
+![On the bridge][image7]
+
+After preprocessing, the images are very different. These have been cropped to remove extraneous data, shifted down to grayscale and reshaped from 60x320 to 64x64
+![Approaching the bridge_grayscale][image8]
+![On bridge_grayscale][image9]
+
+
+For recovery scenarios, I focused on showing the model how to recover from oversteer, rather than moving all the way to the shoulder before recovering.
+![Recovering from righthand oversteer][image10]
+
 Filtering that dataset reduced the density of the data with steering values from -0.2 to 0.2 (-5 degrees to 5 degrees), resulting in a final dataset of 27,293 samples. This more balanced dataset was what I split into training, validation and testing using numpy's random choice function.  
+
+
 
 The final model reflected a testing loss of 0.0279.  
